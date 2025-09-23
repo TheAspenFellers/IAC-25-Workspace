@@ -1,7 +1,6 @@
-variable "base_name" {
+variable "name" {
   description = "Base name for resources"
   type        = string
-  default     = "default"
 }
 
 variable "location" {
@@ -10,7 +9,13 @@ variable "location" {
   default     = "West Europe"
 }
 
-variable "subsciption_id" {
-  description = "Azure Subscription ID"
+variable "tags" {
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
+}
+
+variable "env" {
+  description = "Environment suffix for resource names"
   type        = string
 }
