@@ -9,6 +9,8 @@ terraform {
 
 provider "azurerm" {
   features {}
+  subscription_id = var.subscription_id
+  use_cli         = true
 }
 
 resource "azurerm_resource_group" "fd-rg" {
