@@ -21,7 +21,7 @@ resource "azurerm_resource_group" "resourceGroup" {
 }
 
 resource "azurerm_storage_account" "storageAccount" {
-  name                     = "${local_name}0${local.suffix}"
+  name                     = "${local.sa_name}0${local.suffix}"
   resource_group_name      = azurerm_resource_group.resourceGroup.name
   location                 = azurerm_resource_group.resourceGroup.location
   account_tier             = var.saTier
