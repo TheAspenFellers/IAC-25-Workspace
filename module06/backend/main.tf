@@ -110,7 +110,7 @@ resource "azurerm_key_vault" "kv" {
   sku_name                   = var.kv_sku_name
   soft_delete_retention_days = 90
   purge_protection_enabled   = true
-  enable_rbac_authorization  = true
+  #enable_rbac_authorization  = true
 
   # Network rules can be tightened later in exercises
   public_network_access_enabled = true

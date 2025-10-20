@@ -14,7 +14,9 @@ fi
 echo "Version: $VERSION"
 echo ""
 
-az login --identity
+#az login --identity #Trenger ikke når kjørt i github actions
+keyvault_name="${KEYVAULT_NAME}"
+
 
 #hente tfvars fra keyvault
 for env in dev test prod; do
@@ -23,6 +25,8 @@ for env in dev test prod; do
     --vault-name "$keyvault_name" \
     --name "$env-tfvars" \
     --file "env/${env}.tfvars" \
+
+  done
 
 # Validate Terraform
 echo "1️⃣ Validating Terraform..."
