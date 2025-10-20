@@ -17,6 +17,7 @@ echo ""
 #az login --identity #Trenger ikke når kjørt i github actions
 keyvault_name="${KEYVAULT_NAME}"
 
+mkdir -p env
 
 #hente tfvars fra keyvault
 for env in dev test prod; do
