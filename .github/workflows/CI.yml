@@ -47,7 +47,7 @@ jobs:
           echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
 
       - name: Run build script
-        working-directory: module06
+        working-directory: module06/scripts
         run: |
           chmod +x build.sh
           ./scripts/build.sh
