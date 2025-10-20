@@ -39,7 +39,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      -name: Export ARM_* for Terraform (OIDC)
+      - name: Export ARM_* for Terraform (OIDC)
         run: |
           echo "ARM_USE_OIDC=true" >> $GITHUB_ENV
           echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> $GITHUB_ENV
