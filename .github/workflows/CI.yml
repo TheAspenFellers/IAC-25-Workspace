@@ -47,7 +47,7 @@ jobs:
           echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
 
       - name: Run build script
-        working-directory: /module06
+        working-directory: module06
         run: |
           chmod +x build.sh
           ./scripts/build.sh
@@ -56,4 +56,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-artifact
-          path: module06/scripts/terraform-*.tar.gz
+          path: module06/terraform-*.tar.gz
