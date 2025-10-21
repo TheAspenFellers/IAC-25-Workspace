@@ -23,7 +23,7 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v4
-        
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
@@ -60,6 +60,7 @@ jobs:
         run: tar -xzf ./artifact/terraform.tar.gz -C ./artifact
 
       - name: Run deployment script
+        working-directory: .
         run: |
           chmod +x module06/scripts/deploy.sh
           ./module06/scripts/deploy.sh ${{ matrix.environment }} ./artifact
