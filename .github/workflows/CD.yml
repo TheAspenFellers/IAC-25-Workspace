@@ -1,11 +1,24 @@
+name: Terraform CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "module06/**"
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    needs: build
     strategy:
       matrix:
         environment: [dev, test, prod]
     environment: ${{ matrix.environment }}
+    
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
