@@ -58,32 +58,34 @@ jobs:
       - name: Determine rollback version
         id: version
         run: |
-                # Hvis bruker spesifiserer en versjon, bruk den
-                if [ -n "${{ github.event.inputs.version }}" ]; then
-                  echo "Using specified version: ${{ github.event.inputs.version }}"
-                  echo "VERSION_ID=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-                else
-                  # Finn alle versjoner av blob
-                  echo "finner alle versjoner av tfstate for miljø $ENV i account $STORAGE_ACCOUNT, container $CONTAINER_NAME"
-                  VERSIONS=$(az storage blob list \
-                    --account-name $STORAGE_ACCOUNT \
-                    --container-name $CONTAINER_NAME \
-                    --prefix terraform-${ENV}.tfstate \
-                    --include v \
-                    --auth-mode login \
-                    -o json)
+          # Hvis bruker spesifiserer en versjon, bruk den
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "Using specified version: ${{ github.event.inputs.version }}"
+            echo "VERSION_ID=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            # Finn alle versjoner av blob
+            echo "finner alle versjoner av tfstate for miljø $ENV i account $STORAGE_ACCOUNT, container $CONTAINER_NAME"
+            VERSIONS=$(az storage blob list \
+              --account-name $STORAGE_ACCOUNT \
+              --container-name $CONTAINER_NAME \
+              --prefix terraform-${ENV}.tfstate \
+              --include v \
+              --auth-mode login \
+              -o json)
 
-                  PREV_VERSION=$(echo "$VERSIONS" | jq -r 'sort_by(.properties.lastModified) | reverse | .[1].versionId')
+            PREV_VERSION=$(echo "$VERSIONS" | jq -r 'sort_by(.properties.lastModified) | reverse | .[1].versionId')
 
-                  if [ "$PREV_VERSION" == "null" ] || [ -z "$PREV_VERSION" ]; then
-                    echo "Only one version exists, using latest"
-                    VERSION_ID=""
-                  else
-                    echo "Using previous version: $PREV_VERSION"
-                    VERSION_ID=$PREV_VERSION
-                  fi
+            if [ "$PREV_VERSION" == "null" ] || [ -z "$PREV_VERSION" ]; then
+              echo "Only one version exists, using latest"
+              VERSION_ID=""
+            else
+              echo "Using previous version: $PREV_VERSION"
+              VERSION_ID=$PREV_VERSION
+            fi
 
-                  echo "VERSION_ID=$VERSION_ID" >> $GITHUB_ENV
+            echo "VERSION_ID=$VERSION_ID" >> $GITHUB_ENV
+          fi
+
 
       - name: Download blob for rollback
         run: |
