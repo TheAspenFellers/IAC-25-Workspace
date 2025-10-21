@@ -27,27 +27,27 @@ jobs:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      STORAGE_ACCOUNT: "sttfstateir"
-      CONTAINER_NAME: "tfstate"
+      STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+      CONTAINER_NAME: ${{ secrets.STORAGE_CONTAINER }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Azure Login
+      - name: Azure Login via OIDC
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          allow-no-subscriptions: true
 
-      - name: Determine tfstate name
-        id: names
+      - name: Determine tfstate file
         run: echo "STATE_FILE=terraform-${ENV}.tfstate" >> $GITHUB_ENV
 
-      - name: List previous tfstate versions
+      - name: List available tfstate versions
         run: |
-          echo "Available tfstate versions:"
+          echo "Available tfstate versions for ${ENV}:"
           az storage blob list \
             --account-name $STORAGE_ACCOUNT \
             --container-name $CONTAINER_NAME \
@@ -57,7 +57,7 @@ jobs:
             --query "[].{Version:versionId, LastModified:properties.lastModified}" \
             -o table
 
-      - name: Download selected version (or latest previous)
+      - name: Download selected version (or previous)
         run: |
           VERSION=${{ github.event.inputs.version }}
           if [ -z "$VERSION" ]; then
@@ -69,9 +69,9 @@ jobs:
               --auth-mode login \
               --query "reverse(sort_by([].{v:versionId, t:properties.lastModified}, &t))[1].v" \
               -o tsv)
-            echo " Using previous version: $VERSION"
+            echo "Using previous version: $VERSION"
           else
-            echo " Using user-specified version: $VERSION"
+            echo "Using specified version: $VERSION"
           fi
 
           az storage blob download \
@@ -82,9 +82,9 @@ jobs:
             --file restore.tfstate \
             --auth-mode login
 
-      - name: Upload rollback version as active tfstate
+      - name: Restore tfstate as active
         run: |
-          echo " Restoring previous state to blob..."
+          echo "Uploading restored tfstate as active..."
           az storage blob upload \
             --account-name $STORAGE_ACCOUNT \
             --container-name $CONTAINER_NAME \
