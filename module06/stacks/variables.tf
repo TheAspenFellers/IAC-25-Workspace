@@ -39,6 +39,11 @@ variable "saReplication" {
   default     = "LRS"
 }
 
+variable "saKind" {
+  description = "Storage Account kind."
+  type        = string
+}
+
 variable "env" {
   description = "Environment tag."
   type        = string
