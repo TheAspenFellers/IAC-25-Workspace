@@ -28,54 +28,55 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
-      CONTAINER_NAME: tfstate
+      CONTAINER_NAME: ${{ secrets.STORAGE_CONTAINER }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Azure Login
+      - name: Azure Login via OIDC
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          allow-no-subscriptions: true
 
-      - name: Determine tfstate blob name
+      - name: Determine tfstate file
         run: echo "STATE_FILE=terraform-${ENV}.tfstate" >> $GITHUB_ENV
 
       - name: Determine rollback version
         id: version
         run: |
-          # Hvis bruker spesifiserer en versjon, bruk den
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "Using specified version: ${{ github.event.inputs.version }}"
-            echo "VERSION_ID=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-          else
-            # Finn alle versjoner av blob
-            VERSIONS=$(az storage blob list \
-              --account-name $STORAGE_ACCOUNT \
-              --container-name $CONTAINER_NAME \
-              --prefix terraform-${ENV}.tfstate \
-              --include v \
-              --auth-mode login \
-              --query "[].{version:versionId,lastModified:properties.lastModified}" -o tsv)
+                # Hvis bruker spesifiserer en versjon, bruk den
+                if [ -n "${{ github.event.inputs.version }}" ]; then
+                  echo "Using specified version: ${{ github.event.inputs.version }}"
+                  echo "VERSION_ID=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+                else
+                  # Finn alle versjoner av blob
+                  VERSIONS=$(az storage blob list \
+                    --account-name $STORAGE_ACCOUNT \
+                    --container-name $CONTAINER_NAME \
+                    --prefix terraform-${ENV}.tfstate \
+                    --include v \
+                    --auth-mode login \
+                    --query "[].{version:versionId,lastModified:properties.lastModified}" -o tsv)
 
-            if [ -z "$VERSIONS" ]; then
-              echo "No previous versions found, using latest blob"
-              echo "VERSION_ID=" >> $GITHUB_ENV
-            else
-              # Hent nest nyeste versjon (forrige)
-              PREV_VERSION=$(echo "$VERSIONS" | sort -r | sed -n '2p' | awk '{print $1}')
-              if [ -z "$PREV_VERSION" ]; then
-                echo "Only one version exists, using latest"
-                echo "VERSION_ID=" >> $GITHUB_ENV
-              else
-                echo "Using previous version: $PREV_VERSION"
-                echo "VERSION_ID=$PREV_VERSION" >> $GITHUB_ENV
-              fi
-            fi
-          fi
+                  if [ -z "$VERSIONS" ]; then
+                    echo "No previous versions found, using latest blob"
+                    echo "VERSION_ID=" >> $GITHUB_ENV
+                  else
+                    # Hent nest nyeste versjon (forrige)
+                    PREV_VERSION=$(echo "$VERSIONS" | sort -r | sed -n '2p' | awk '{print $1}')
+                    if [ -z "$PREV_VERSION" ]; then
+                      echo "Only one version exists, using latest"
+                      echo "VERSION_ID=" >> $GITHUB_ENV
+                    else
+                      echo "Using previous version: $PREV_VERSION"
+                      echo "VERSION_ID=$PREV_VERSION" >> $GITHUB_ENV
+                    fi
+                  fi
+                fi
 
       - name: Download blob for rollback
         run: |
