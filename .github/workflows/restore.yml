@@ -75,23 +75,15 @@ jobs:
 
                   PREV_VERSION=$(echo "$VERSIONS" | jq -r 'sort_by(.properties.lastModified) | reverse | .[1].versionId')
 
-                  echo "Previous version: $PREV_VERSION"
-
-                  if [ -z "$VERSIONS" ]; then
-                    echo "No previous versions found, using latest blob"
-                    echo "VERSION_ID=" >> $GITHUB_ENV
+                  if [ "$PREV_VERSION" == "null" ] || [ -z "$PREV_VERSION" ]; then
+                    echo "Only one version exists, using latest"
+                    VERSION_ID=""
                   else
-                    # Hent nest nyeste versjon (forrige)
-                    PREV_VERSION=$(echo "$VERSIONS" | sort -r | sed -n '2p' | awk '{print $1}')
-                    if [ -z "$PREV_VERSION" ]; then
-                      echo "Only one version exists, using latest"
-                      echo "VERSION_ID=" >> $GITHUB_ENV
-                    else
-                      echo "Using previous version: $PREV_VERSION"
-                      echo "VERSION_ID=$PREV_VERSION" >> $GITHUB_ENV
-                    fi
+                    echo "Using previous version: $PREV_VERSION"
+                    VERSION_ID=$PREV_VERSION
                   fi
-                fi
+
+                  echo "VERSION_ID=$VERSION_ID" >> $GITHUB_ENV
 
       - name: Download blob for rollback
         run: |
