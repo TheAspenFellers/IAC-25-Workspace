@@ -54,8 +54,13 @@ jobs:
           chmod +x scripts/build.sh
           ./scripts/build.sh
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-artifact
-          path: module06/terraform-*.tar.gz
+      - name: Upload artifact to Azure Storage
+        env:
+          STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ secrets.STORAGE_CONTAINER }}
+        run: |
+          az storage blob upload \
+            --account-name "$STORAGE_ACCOUNT" \
+            --container-name "$STORAGE_CONTAINER" \
+            --name "terraform-artifact.tar.gz" \
+            --file module06/terraform-*.tar.gz 

@@ -20,11 +20,6 @@ jobs:
     environment: ${{ matrix.environment }}
     
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-artifact
-          path: ./artifact
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -45,11 +40,24 @@ jobs:
           echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
           echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
 
+      - name: Download artifact from Azure Storage
+        env:
+          STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ secrets.STORAGE_CONTAINER }}
+        run: |
+          mkdir -p ./artifact
+          az storage blob download \
+            --account-name "$STORAGE_ACCOUNT" \
+            --container-name "$STORAGE_CONTAINER" \
+            --name "terraform-artifact.tar.gz" \
+            --file ./artifact/terraform.tar.gz 
+            
+
       - name: Extract artifact
-        run: tar -xzf artifact/terraform-*.tar.gz -C ./artifact
+        run: tar -xzf ./artifact/terraform.tar.gz -C ./artifact
 
       - name: Run deployment script
         working-directory: module06
         run: |
           chmod +x scripts/deploy.sh
-          ./scripts/deploy.sh ${{ matrix.environment }} ../artifact/extracted
+          ./scripts/deploy.sh ${{ matrix.environment }} ../artifact
