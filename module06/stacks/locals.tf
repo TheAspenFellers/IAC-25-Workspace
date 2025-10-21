@@ -11,5 +11,6 @@ locals {
   tags = {
     Environment = var.env
     Project     = var.project
+    App         = "Mapp"
   }
 }
