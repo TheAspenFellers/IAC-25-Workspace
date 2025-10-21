@@ -53,14 +53,11 @@ jobs:
             --account-name "$STORAGE_ACCOUNT" \
             --container-name "$STORAGE_CONTAINER" \
             --name "terraform-artifact.tar.gz" \
-            --file ./artifact/terraform.tar.gz 
-            
-
-      - name: Extract artifact
-        run: tar -xzf ./artifact/terraform.tar.gz -C ./artifact
+            --file ./artifact/terraform.tar.gz \
+            --overwrite
 
       - name: Run deployment script
         working-directory: .
         run: |
           chmod +x module06/scripts/deploy.sh
-          ./module06/scripts/deploy.sh ${{ matrix.environment }} ./artifact
+          ./module06/scripts/deploy.sh ${{ matrix.environment }} ./artifact/terraform.tar.gz
