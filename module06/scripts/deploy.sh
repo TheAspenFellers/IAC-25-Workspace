@@ -23,19 +23,6 @@ fi
 echo "🚀 Deploying to $ENVIRONMENT environment..."
 echo ""
 
-if [ "$ENVIRONMENT" == "prod" ]; then
-  echo "⚠️  You are about to deploy to PRODUCTION!"
-  echo ""
-  echo "Type 'yes' to confirm, or anything else to abort:"
-  read CONFIRM
-  if [ "$CONFIRM" != "yes" ]; then
-    echo "🚫 Deployment to production aborted by user."
-    exit 0
-  fi
-  echo "✅ Production deployment confirmed."
-  echo ""
-fi
-
 # Get subscription ID from Azure CLI
 echo "🔍 Getting Azure subscription ID..."
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
