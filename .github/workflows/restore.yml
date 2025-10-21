@@ -61,7 +61,11 @@ jobs:
                     --prefix terraform-${ENV}.tfstate \
                     --include v \
                     --auth-mode login \
-                    --query "[].{version:versionId,lastModified:properties.lastModified}" -o tsv)
+                    -o json)
+
+                  PREV_VERSION=$(echo "$VERSIONS" | jq -r 'sort_by(.properties.lastModified) | reverse | .[1].versionId')
+
+                  echo "Previous version: $PREV_VERSION"
 
                   if [ -z "$VERSIONS" ]; then
                     echo "No previous versions found, using latest blob"
