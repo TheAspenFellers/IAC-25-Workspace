@@ -63,4 +63,6 @@ jobs:
             --account-name "$STORAGE_ACCOUNT" \
             --container-name "$STORAGE_CONTAINER" \
             --name "terraform-artifact.tar.gz" \
-            --file module06/terraform-*.tar.gz 
+            --file module06/terraform-*.tar.gz \
+            --auth-mode login \
+            --overwrite
