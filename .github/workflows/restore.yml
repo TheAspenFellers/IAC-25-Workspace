@@ -45,6 +45,16 @@ jobs:
       - name: Determine tfstate file
         run: echo "STATE_FILE=terraform-${ENV}.tfstate" >> $GITHUB_ENV
 
+      - name: Test list blob versions
+        run: |
+          az storage blob list \
+            --account-name ${{ secrets.STORAGE_ACCOUNT }} \
+            --container-name ${{ secrets.STORAGE_CONTAINER }} \
+            --prefix terraform-${ENV}.tfstate \
+            --include v \
+            --auth-mode login \
+            --query "[].{version:versionId,lastModified:properties.lastModified}" -o table
+
       - name: Determine rollback version
         id: version
         run: |
