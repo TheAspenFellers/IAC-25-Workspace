@@ -59,9 +59,20 @@ jobs:
 
       - name: Download selected version (or previous)
         run: |
-          VERSION=${{ github.event.inputs.version }}
-          if [ -z "$VERSION" ]; then
-            VERSION=$(az storage blob list \
+          echo "Determining which version to restore..."
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION=${{ github.event.inputs.version }}
+            echo "Using user-specified version: $VERSION"
+            az storage blob download \
+              --account-name $STORAGE_ACCOUNT \
+              --container-name $CONTAINER_NAME \
+              --name terraform-${ENV}.tfstate \
+              --version-id $VERSION \
+              --file restore.tfstate \
+              --auth-mode login
+          else
+            # Get list of versions (if blob-versioning enabled)
+            VERSIONS=$(az storage blob list \
               --account-name $STORAGE_ACCOUNT \
               --container-name $CONTAINER_NAME \
               --prefix terraform-${ENV}.tfstate \
@@ -69,18 +80,28 @@ jobs:
               --auth-mode login \
               --query "reverse(sort_by([].{v:versionId, t:properties.lastModified}, &t))[1].v" \
               -o tsv)
-            echo "Using previous version: $VERSION"
-          else
-            echo "Using specified version: $VERSION"
+
+            if [ -n "$VERSIONS" ]; then
+              VERSION="$VERSIONS"
+              echo "Using previous version: $VERSION"
+              az storage blob download \
+                --account-name $STORAGE_ACCOUNT \
+                --container-name $CONTAINER_NAME \
+                --name terraform-${ENV}.tfstate \
+                --version-id $VERSION \
+                --file restore.tfstate \
+                --auth-mode login
+            else
+              echo "No previous version found, using latest blob..."
+              az storage blob download \
+                --account-name $STORAGE_ACCOUNT \
+                --container-name $CONTAINER_NAME \
+                --name terraform-${ENV}.tfstate \
+                --file restore.tfstate \
+                --auth-mode login
+            fi
           fi
 
-          az storage blob download \
-            --account-name $STORAGE_ACCOUNT \
-            --container-name $CONTAINER_NAME \
-            --name terraform-${ENV}.tfstate \
-            --version-id $VERSION \
-            --file restore.tfstate \
-            --auth-mode login
 
       - name: Restore tfstate as active
         run: |
