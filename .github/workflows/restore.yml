@@ -1,0 +1,106 @@
+name: Restore Terraform State
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to restore (dev, test, prod)"
+        required: true
+        default: "dev"
+      version:
+        description: "Optional: specific versionId of the tfstate blob to restore"
+        required: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  restore:
+    name: Restore ${{ github.event.inputs.environment }} state
+    runs-on: ubuntu-latest
+
+    env:
+      ENV: ${{ github.event.inputs.environment }}
+      TF_IN_AUTOMATION: true
+      ARM_USE_OIDC: true
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      STORAGE_ACCOUNT: "sttfstateir"
+      CONTAINER_NAME: "tfstate"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Determine tfstate name
+        id: names
+        run: echo "STATE_FILE=terraform-${ENV}.tfstate" >> $GITHUB_ENV
+
+      - name: List previous tfstate versions
+        run: |
+          echo "Available tfstate versions:"
+          az storage blob list \
+            --account-name $STORAGE_ACCOUNT \
+            --container-name $CONTAINER_NAME \
+            --prefix terraform-${ENV}.tfstate \
+            --include v \
+            --auth-mode login \
+            --query "[].{Version:versionId, LastModified:properties.lastModified}" \
+            -o table
+
+      - name: Download selected version (or latest previous)
+        run: |
+          VERSION=${{ github.event.inputs.version }}
+          if [ -z "$VERSION" ]; then
+            VERSION=$(az storage blob list \
+              --account-name $STORAGE_ACCOUNT \
+              --container-name $CONTAINER_NAME \
+              --prefix terraform-${ENV}.tfstate \
+              --include v \
+              --auth-mode login \
+              --query "reverse(sort_by([].{v:versionId, t:properties.lastModified}, &t))[1].v" \
+              -o tsv)
+            echo " Using previous version: $VERSION"
+          else
+            echo " Using user-specified version: $VERSION"
+          fi
+
+          az storage blob download \
+            --account-name $STORAGE_ACCOUNT \
+            --container-name $CONTAINER_NAME \
+            --name terraform-${ENV}.tfstate \
+            --version-id $VERSION \
+            --file restore.tfstate \
+            --auth-mode login
+
+      - name: Upload rollback version as active tfstate
+        run: |
+          echo " Restoring previous state to blob..."
+          az storage blob upload \
+            --account-name $STORAGE_ACCOUNT \
+            --container-name $CONTAINER_NAME \
+            --name terraform-${ENV}.tfstate \
+            --file restore.tfstate \
+            --overwrite \
+            --auth-mode login
+
+      - name: Terraform Init (Reconfigure)
+        working-directory: module06/stacks
+        run: terraform init -reconfigure -backend-config=../backend-configs/${ENV}.hcl
+
+      - name: Terraform Plan (verify rollback)
+        working-directory: module06/stacks
+        run: terraform plan -var-file=../env/${ENV}.tfvars
+
+      - name: Terraform Apply (confirm rollback)
+        working-directory: module06/stacks
+        run: terraform apply -auto-approve -var-file=../env/${ENV}.tfvars

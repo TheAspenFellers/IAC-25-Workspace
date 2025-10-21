@@ -40,7 +40,6 @@ export ARM_SUBSCRIPTION_ID=$SUBSCRIPTION_ID
 
 # Create workspace
 WORKSPACE="workspace-${ENVIRONMENT}"
-rm -rf $WORKSPACE
 mkdir -p $WORKSPACE
 
 # Extract artifact
@@ -53,7 +52,7 @@ cd $WORKSPACE/stacks
 
 # Initialize with backend
 echo "2️⃣ Initializing Terraform..."
-terraform init -backend-config=../backend-configs/${ENVIRONMENT}.hcl
+terraform init -reconfigure -backend-config=../backend-configs/${ENVIRONMENT}.hcl
 echo ""
 
 # Plan
