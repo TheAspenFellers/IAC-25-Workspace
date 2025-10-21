@@ -8,7 +8,7 @@ echo ""
 # Function to destroy environment
 destroy_environment() {
     local ENV=$1
-    local WORKSPACE="workspace-${ENV}"
+    local WORKSPACE="."
     
     echo "───────────────────────────────────────"
     echo "Cleaning up: $ENV environment"
@@ -32,18 +32,18 @@ destroy_environment() {
     
     export ARM_SUBSCRIPTION_ID=$SUBSCRIPTION_ID
     
-    cd "$WORKSPACE/terraform"
+    cd "$WORKSPACE"
     
     # Initialize if needed
-    if [ ! -d ".terraform" ]; then
-        echo "🔧 Initializing Terraform..."
-        terraform init -backend-config=../backend-configs/backend-${ENV}.tfvars
-        echo ""
-    fi
+    
+    echo "🔧 Initializing Terraform..."
+    terraform init -backend-config=../backend-configs/${ENV}.hcl
+    echo ""
+    
     
     # Show what will be destroyed
     echo "📋 Planning destruction..."
-    terraform plan -destroy -var-file=../environments/${ENV}.tfvars
+    terraform plan -destroy -var-file=../env/${ENV}.tfvars
     echo ""
     
     # Confirm
@@ -58,7 +58,7 @@ destroy_environment() {
     # Destroy
     echo ""
     echo "💥 Destroying infrastructure..."
-    terraform destroy -var-file=../environments/${ENV}.tfvars -auto-approve
+    terraform destroy -var-file=../env/${ENV}.tfvars -auto-approve
     
     cd ../..
     echo ""
