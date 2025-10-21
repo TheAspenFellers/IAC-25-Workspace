@@ -23,6 +23,19 @@ fi
 echo "🚀 Deploying to $ENVIRONMENT environment..."
 echo ""
 
+if [ "$ENVIRONMENT" == "prod" ]; then
+  echo "⚠️  You are about to deploy to PRODUCTION!"
+  echo ""
+  echo "Type 'yes' to confirm, or anything else to abort:"
+  read CONFIRM
+  if [ "$CONFIRM" != "yes" ]; then
+    echo "🚫 Deployment to production aborted by user."
+    exit 0
+  fi
+  echo "✅ Production deployment confirmed."
+  echo ""
+fi
+
 # Get subscription ID from Azure CLI
 echo "🔍 Getting Azure subscription ID..."
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
@@ -49,16 +62,16 @@ tar -xzf $ARTIFACT -C $WORKSPACE
 echo "✅ Artifact extracted"
 echo ""
 
-cd $WORKSPACE/terraform
+cd $WORKSPACE/stacks
 
 # Initialize with backend
 echo "2️⃣ Initializing Terraform..."
-terraform init -backend-config=../backend-configs/backend-${ENVIRONMENT}.tfvars
+terraform init -backend-config=../backend-configs/${ENVIRONMENT}.hcl
 echo ""
 
 # Plan
 echo "3️⃣ Planning deployment..."
-terraform plan -var-file=../environments/${ENVIRONMENT}.tfvars -out=tfplan
+terraform plan -var-file=../env/${ENVIRONMENT}.tfvars -out=tfplan
 echo ""
 
 # Apply
