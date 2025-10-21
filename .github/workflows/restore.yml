@@ -54,6 +54,7 @@ jobs:
                   echo "VERSION_ID=${{ github.event.inputs.version }}" >> $GITHUB_ENV
                 else
                   # Finn alle versjoner av blob
+                  echo "finner alle versjoner av tfstate for miljø $ENV i account $STORAGE_ACCOUNT, container $CONTAINER_NAME"
                   VERSIONS=$(az storage blob list \
                     --account-name $STORAGE_ACCOUNT \
                     --container-name $CONTAINER_NAME \
